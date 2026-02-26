@@ -1,101 +1,119 @@
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/Ellipse 10.png";
+import { useAuth } from "../AuthContext";
 
 type HeaderProps = {
-  fullName: string;
+  fullName?: string;
 };
 
 function Header({ fullName }: HeaderProps) {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const displayName = fullName ?? (user ? `${user.last_name} ${user.first_name[0]}.` : "");
+
+  function handleLogout() {
+    logout();
+    navigate("/login");
+  }
 
   return (
-    <header
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: 80,
-        backgroundColor: "#39568A",
-        zIndex: 1000,
-      }}
-    >
-      <div
-        style={{
-          position: "relative",
-          height: "100%",
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "0 24px",
-          display: "flex",
-          alignItems: "center",
-          boxSizing: "border-box",
-        }}
-      >
-        <img
-          src={logo}
-          alt="Логотип"
+    <header style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: 72,
+      backgroundColor: "#39568A",
+      zIndex: 1000,
+      boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
+    }}>
+      <div style={{
+        position: "relative",
+        height: "100%",
+        maxWidth: 1280,
+        margin: "0 auto",
+        padding: "0 24px",
+        display: "flex",
+        alignItems: "center",
+        boxSizing: "border-box",
+      }}>
+        {/* Logo icon */}
+        <div
+          onClick={() => navigate("/")}
           style={{
             width: 48,
             height: 48,
-            objectFit: "contain",
+            borderRadius: "50%",
+            border: "2px solid rgba(255,255,255,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
             flexShrink: 0,
+            color: "#FFFFFF",
+            fontSize: 22,
           }}
-        />
-
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            transform: "translateX(-50%)",
-            backgroundColor: "#FFFFFF",
-            borderRadius: 20,
-            padding: "8px 20px",
-            fontSize: 24,
-            fontWeight: 600,
-            fontFamily: "Bitter, serif",
-            whiteSpace: "nowrap",
-          }}
+          title="На главную"
         >
+          👁
+        </div>
+
+        {/* Brand name — centered */}
+        <div style={{
+          position: "absolute",
+          left: "50%",
+          transform: "translateX(-50%)",
+          backgroundColor: "#FFFFFF",
+          borderRadius: 50,
+          padding: "7px 22px",
+          fontSize: 20,
+          fontFamily: "'Bitter', serif",
+          fontWeight: 700,
+          whiteSpace: "nowrap",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+        }}>
           <span style={{ color: "#39568A" }}>Офтальмолог</span>
           <span style={{ color: "#000000" }}>.Онлайн</span>
         </div>
 
-        <div
-          style={{
-            marginLeft: "auto",
-            display: "flex",
-            alignItems: "center",
-            gap: 16,
-            flexShrink: 0,
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "rgba(255,255,255)",
-              color: "#00000",
-              padding: "6px 14px",
-              borderRadius: 16,
-              fontSize: 14,
-              whiteSpace: "nowrap",
-            }}
-          >
-            {fullName}
-          </div>
-
+        {/* Right: user name + logout */}
+        <div style={{
+          marginLeft: "auto",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexShrink: 0,
+        }}>
           <button
-            onClick={() => navigate("/login")}
+            onClick={handleLogout}
             style={{
               background: "transparent",
               border: "none",
-              color: "#FFFFFF",
-              fontSize: 16,
+              color: "rgba(255,255,255,0.85)",
+              fontSize: 15,
               cursor: "pointer",
-              whiteSpace: "nowrap",
+              fontFamily: "inherit",
+              padding: "4px 8px",
+              transition: "color 0.18s",
             }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.85)")}
           >
             Выход
           </button>
+
+          <div style={{
+            backgroundColor: "rgba(255,255,255,0.15)",
+            color: "#FFFFFF",
+            padding: "6px 16px",
+            borderRadius: 50,
+            fontSize: 14,
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+            border: "1px solid rgba(255,255,255,0.25)",
+          }}>
+            {displayName}
+          </div>
         </div>
       </div>
     </header>
