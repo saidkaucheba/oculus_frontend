@@ -154,12 +154,12 @@ function DoctorDashboard() {
           <button
             style={{
               padding: "14px 28px",
-              backgroundColor: "#FFFFFF",
+              backgroundColor: "#39568A",
+              color: "#FFFFFF",
               border: "1px solid #CFCFCF",
               borderRadius: 12,
               fontSize: 16,
               cursor: "pointer",
-              color: "#000000",
             }}
           >
             Добавить пациента
