@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import logo from "../assets/Ellipse 10.png";
 
 type HeaderProps = {
   fullName: string;
@@ -10,51 +11,91 @@ function Header({ fullName }: HeaderProps) {
   return (
     <header
       style={{
-        height: 64,
+        position: "fixed",
+        top: 0,
+        left: 0,
+        width: "100%",
+        height: 80,
         backgroundColor: "#39568A",
-        color: "#FFFFFF",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 16px",
+        zIndex: 1000,
       }}
     >
-      {/* Пусто слева — чтобы всё было справа */}
-      <div />
-
-      {/* Правая часть */}
       <div
         style={{
+          position: "relative",
+          height: "100%",
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "0 24px",
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          boxSizing: "border-box",
         }}
       >
-        {/* Выход */}
-        <button
-          onClick={() => navigate("/login")}
+        <img
+          src={logo}
+          alt="Логотип"
           style={{
-            background: "transparent",
-            border: "none",
-            color: "#FFFFFF",
-            fontSize: 16,
-            cursor: "pointer",
+            width: 48,
+            height: 48,
+            objectFit: "contain",
+            flexShrink: 0,
           }}
-        >
-          Выход
-        </button>
+        />
 
-        {/* Профиль */}
         <div
           style={{
-            backgroundColor: "rgba(255,255,255,0.2)",
-            padding: "6px 12px",
-            borderRadius: 16,
-            fontSize: 14,
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            backgroundColor: "#FFFFFF",
+            borderRadius: 20,
+            padding: "8px 20px",
+            fontSize: 24,
+            fontWeight: 600,
+            fontFamily: "Bitter, serif",
             whiteSpace: "nowrap",
           }}
         >
-          {fullName}
+          <span style={{ color: "#39568A" }}>Офтальмолог</span>
+          <span style={{ color: "#000000" }}>.Онлайн</span>
+        </div>
+
+        <div
+          style={{
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "rgba(255,255,255)",
+              color: "#00000",
+              padding: "6px 14px",
+              borderRadius: 16,
+              fontSize: 14,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {fullName}
+          </div>
+
+          <button
+            onClick={() => navigate("/login")}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: "#FFFFFF",
+              fontSize: 16,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Выход
+          </button>
         </div>
       </div>
     </header>

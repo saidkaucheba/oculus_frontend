@@ -22,7 +22,6 @@ function PatientCardPage() {
   const [checklist, setChecklist] =
     useState<ChecklistItem[]>(initialChecklist);
 
-  /* Загрузка сохранённых данных */
   useEffect(() => {
     const saved = localStorage.getItem("patientDraft");
     if (saved) {
@@ -34,7 +33,6 @@ function PatientCardPage() {
     }
   }, []);
 
-  /* Синхронизация при появлении интернета */
   useEffect(() => {
     function syncWhenOnline() {
       const saved = localStorage.getItem("patientDraft");
@@ -60,7 +58,6 @@ function PatientCardPage() {
     <PageLayout fullName="Иванов Петр Сергеевич">
       <h1>Карточка пациента</h1>
 
-      {/* ОСНОВНОЙ КОНТЕЙНЕР */}
       <div
         style={{
           backgroundColor: "#FFFFFF",
@@ -69,7 +66,6 @@ function PatientCardPage() {
           width: "100%",
         }}
       >
-        {/* ОСНОВНЫЕ ДАННЫЕ */}
         <h2>Основные данные</h2>
 
         <div style={{ marginBottom: 16 }}>
@@ -142,12 +138,10 @@ function PatientCardPage() {
           ))}
         </div>
 
-        {/* КАЛЬКУЛЯТОР */}
         <div style={{ marginBottom: 32 }}>
           <IOLCalculator />
         </div>
 
-        {/* КНОПКА СОХРАНЕНИЯ */}
         <button
           onClick={saveData}
           style={{
@@ -169,7 +163,6 @@ function PatientCardPage() {
   );
 }
 
-/* ===== ТОЛЬКО СТИЛИ ПОЛЕЙ ВВОДА ===== */
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "10px 12px",

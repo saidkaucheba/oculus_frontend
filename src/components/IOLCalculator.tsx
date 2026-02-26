@@ -7,7 +7,6 @@ function IOLCalculator() {
   const [result, setResult] = useState<number | null>(null);
 
   function calculate() {
-    // УПРОЩЁННАЯ ЗАГЛУШКА
     const value = (Number(k1) + Number(k2)) / 2;
     setResult(value);
   }

@@ -9,7 +9,7 @@ body,
   padding: 0;
   width: 100%;
   height: 100%;
-  overflow-x: hidden; /* 🔥 УБИРАЕТ ЧЁРНЫЙ ФОН СПРАВА */
+  overflow-x: hidden;
 }
 
 body {
@@ -18,7 +18,6 @@ body {
   color: #000000;
 }
 
-/* Заголовки */
 h1 {
   font-size: 40px;
   margin: 0 0 16px 0;
@@ -33,7 +32,6 @@ p {
   color: #616161;
 }
 
-/* Поля */
 input,
 textarea {
   width: 100%;
@@ -44,7 +42,6 @@ textarea {
   font-family: inherit;
 }
 
-/* Кнопки */
 button {
   font-family: inherit;
   cursor: pointer;

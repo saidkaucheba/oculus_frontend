@@ -1,29 +1,25 @@
 import Header from "./Header";
 
 type PageLayoutProps = {
-  fullName: string;
   children: React.ReactNode;
+  fullName: string;
 };
 
-function PageLayout({ fullName, children }: PageLayoutProps) {
+function PageLayout({ children, fullName }: PageLayoutProps) {
   return (
-    <div
-      style={{
-        width: "100%",
-        minHeight: "100vh",
-        backgroundColor: "#EAE8EF",
-      }}
-    >
+    <div>
       <Header fullName={fullName} />
 
-      <div
+      <main
         style={{
-          padding: 16,        // одинаково на всех экранах
-          width: "100%",      // 🔥 НИКАКИХ maxWidth
+          paddingTop: 80,
+          minHeight: "100vh",
+          backgroundColor: "#EAE8EF",
+          boxSizing: "border-box",
         }}
       >
         {children}
-      </div>
+      </main>
     </div>
   );
 }

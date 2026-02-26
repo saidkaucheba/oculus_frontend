@@ -1,141 +1,169 @@
 import PageLayout from "../components/PageLayout";
 
+import incompleteIcon from "../assets/Диаграмма.png";
+import preparingIcon from "../assets/Диаграмма (1).png";
+import readyIcon from "../assets/Диаграмма (2).png";
+
 function DoctorDashboard() {
+  const stats = [
+    {
+      title: "Всего: Пациенты с неполными данными",
+      value: 500,
+      color: "#a70b0b",
+      icon: incompleteIcon,
+    },
+    {
+      title: "Всего: Пациенты на подготовке",
+      value: 340,
+      color: "#d0d31c",
+      icon: preparingIcon,
+    },
+    {
+      title: "Всего: Пациенты готовые к операции",
+      value: 102,
+      color: "#3ea515",
+      icon: readyIcon,
+    },
+  ];
+
   return (
     <PageLayout fullName="Иванов Петр Сергеевич">
-      {/* ОСНОВНОЙ БЕЛЫЙ КОНТЕЙНЕР */}
       <div
         style={{
           backgroundColor: "#FFFFFF",
           borderRadius: 16,
           padding: 24,
-          display: "flex",
-          gap: 24,
-          flexWrap: "wrap",
+          minHeight: "120vh",
         }}
       >
-        {/* ЛЕВАЯ ЧАСТЬ */}
-        <div style={{ flex: 1, minWidth: 280 }}>
-          <h1 style={{ marginBottom: 24 }}>Список пациентов</h1>
+        <h1 style={{ marginBottom: 24, color: "#000000" }}>
+          Список пациентов:
+        </h1>
 
-          {/* КАРТОЧКИ СТАТИСТИКИ */}
+        <div
+          style={{
+            display: "flex",
+            gap: 24,
+            alignItems: "flex-start",
+          }}
+        >
           <div
             style={{
+              width: 750,
               display: "flex",
+              flexDirection: "column",
               gap: 16,
-              marginBottom: 24,
-              flexWrap: "wrap",
             }}
           >
-            {[
-              {
-                title: "Всего: Пациенты с неполными данными",
-                value: 500,
-              },
-              {
-                title: "Всего: Пациенты на подготовке",
-                value: 340,
-              },
-              {
-                title: "Всего: Пациенты готовые к операции",
-                value: 102,
-              },
-            ].map((item, index) => (
+            {stats.map((item, index) => (
               <div
                 key={index}
                 style={{
                   backgroundColor: "#EAE8EF",
                   borderRadius: 16,
                   padding: 16,
-                  flex: "1 1 180px",
+                  height: 140,
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  boxSizing: "border-box",
                 }}
               >
                 <div>
                   <div
                     style={{
                       fontSize: 14,
-                      color: "#616161",
                       marginBottom: 8,
+                      color: "#000000",
                     }}
                   >
                     {item.title}
                   </div>
+
                   <div
                     style={{
                       fontSize: 40,
                       fontWeight: 600,
+                      color: item.color,
                     }}
                   >
                     {item.value}
                   </div>
                 </div>
 
-                {/* Заглушка под фото */}
-                <div
+                <img
+                  src={item.icon}
+                  alt=""
                   style={{
-                    width: 48,
-                    height: 48,
-                    backgroundColor: "#CFCFCF",
-                    borderRadius: 12,
+                    width: 150,
+                    height: 150,
+                    objectFit: "contain",
+                    flexShrink: 0,
                   }}
                 />
               </div>
             ))}
+
           </div>
 
-          {/* КНОПКА */}
+          <div
+            style={{
+              width: 500,
+              backgroundColor: "#EAE8EF",
+              borderRadius: 16,
+              padding: 24,
+              boxSizing: "border-box",
+            }}
+          >
+            {[
+              { title: "Всего:", value: 942 },
+              { title: "Свободные даты:", value: 23 },
+              { title: "Свободные хирурги:", value: 4 },
+            ].map((item, index) => (
+              <div key={index} style={{ marginBottom: 24 }}>
+                <div
+                  style={{
+                    fontSize: 16,
+                    marginBottom: 8,
+                    color: "#000000",
+                  }}
+                >
+                  {item.title}
+                </div>
+                <div
+                  style={{
+                    fontSize: 48,
+                    fontWeight: 600,
+                    color: "#000000",
+                  }}
+                >
+                  {item.value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginTop: 32,
+          }}
+        >
           <button
             style={{
-              padding: "12px 24px",
+              padding: "14px 28px",
               backgroundColor: "#FFFFFF",
               border: "1px solid #CFCFCF",
               borderRadius: 12,
               fontSize: 16,
               cursor: "pointer",
+              color: "#000000",
             }}
           >
             Добавить пациента
           </button>
-        </div>
-
-        {/* ПРАВАЯ ЧАСТЬ */}
-        <div
-          style={{
-            backgroundColor: "#EAE8EF",
-            borderRadius: 16,
-            padding: 24,
-            minWidth: 240,
-            flexShrink: 0,
-          }}
-        >
-          {[
-            { title: "Всего:", value: 942 },
-            { title: "Свободные даты:", value: 23 },
-            { title: "Свободные хирурги:", value: 4 },
-          ].map((item, index) => (
-            <div key={index} style={{ marginBottom: 24 }}>
-              <div
-                style={{
-                  fontSize: 16,
-                  color: "#616161",
-                  marginBottom: 8,
-                }}
-              >
-                {item.title}
-              </div>
-              <div
-                style={{
-                  fontSize: 48,
-                  fontWeight: 600,
-                }}
-              >
-                {item.value}
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </PageLayout>
