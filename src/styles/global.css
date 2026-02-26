@@ -1,0 +1,51 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden; /* 🔥 УБИРАЕТ ЧЁРНЫЙ ФОН СПРАВА */
+}
+
+body {
+  font-family: "Bitter", serif;
+  background-color: #eae8ef;
+  color: #000000;
+}
+
+/* Заголовки */
+h1 {
+  font-size: 40px;
+  margin: 0 0 16px 0;
+}
+
+h2 {
+  font-size: 32px;
+  margin: 0 0 12px 0;
+}
+
+p {
+  color: #616161;
+}
+
+/* Поля */
+input,
+textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  font-family: inherit;
+}
+
+/* Кнопки */
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
