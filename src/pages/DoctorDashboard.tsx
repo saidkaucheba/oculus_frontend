@@ -55,31 +55,61 @@ function StatCard({ title, count, color, percent }: { title: string; count: numb
   );
 }
 
+function formatAge(birthDate: string): string {
+  if (!birthDate) return "";
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return `${age} лет`;
+}
+
 function DoctorDashboard() {
   const navigate = useNavigate();
-  const { data, loading, error, createPatient, refetch } = usePatients();
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("red");
 
-  const { data: searchData } = usePatients({ search: searchQuery || undefined });
+  const { data: allData, loading: loadingAll, error, refetch: refetchAll } = usePatients();
+  const { data: redData,    loading: loadingRed,    refetch: refetchRed    } = usePatients({ status: "red",    page: 1 });
+  const { data: yellowData, loading: loadingYellow, refetch: refetchYellow } = usePatients({ status: "yellow", page: 1 });
+  const { data: greenData,  loading: loadingGreen,  refetch: refetchGreen  } = usePatients({ status: "green",  page: 1 });
+  const { data: blueData,                           refetch: refetchBlue   } = usePatients({ status: "blue",   page: 1 });
+  const { data: searchData, loading: loadingSearch, createPatient          } = usePatients({ search: searchQuery || undefined });
 
-  const allPatients = data?.results ?? [];
-  const total = data?.count ?? 0;
+  const loading = loadingAll || loadingRed || loadingYellow || loadingGreen;
+
+  const total = allData?.count ?? 0;
 
   const counts: Record<PatientStatus, number> = {
-    red:    allPatients.filter((p) => p.status === "red").length,
-    yellow: allPatients.filter((p) => p.status === "yellow").length,
-    green:  allPatients.filter((p) => p.status === "green").length,
-    blue:   allPatients.filter((p) => p.status === "blue").length,
+    red:    redData?.count    ?? 0,
+    yellow: yellowData?.count ?? 0,
+    green:  greenData?.count  ?? 0,
+    blue:   blueData?.count   ?? 0,
   };
 
   const pct = (n: number) => total > 0 ? Math.round((n / total) * 100) : 0;
 
-  // When searching, show all; otherwise filter by tab
+  const tabPatients: Record<Tab, Patient[]> = {
+    red:    redData?.results    ?? [],
+    yellow: yellowData?.results ?? [],
+    green:  greenData?.results  ?? [],
+  };
+
   const displayPatients = searchQuery
     ? (searchData?.results ?? [])
-    : allPatients.filter((p) => p.status === activeTab);
+    : tabPatients[activeTab];
+
+  const isListLoading = searchQuery ? loadingSearch : (
+    activeTab === "red" ? loadingRed :
+    activeTab === "yellow" ? loadingYellow :
+    loadingGreen
+  );
+
+  function refetch() {
+    refetchAll(); refetchRed(); refetchYellow(); refetchGreen(); refetchBlue();
+  }
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "red",    label: "Не готов" },
@@ -97,9 +127,7 @@ function DoctorDashboard() {
         )}
 
         <div style={{ display: "flex", gap: 20, alignItems: "flex-start", flexWrap: "wrap" }}>
-          {/* ── Left: stats + list ── */}
           <div style={{ flex: 1, minWidth: 300, display: "flex", flexDirection: "column", gap: 16 }}>
-            {/* Stat cards */}
             <div style={{ backgroundColor: "#FFFFFF", borderRadius: 16, padding: 20, boxShadow: "0 2px 12px rgba(57,86,138,0.07)" }}>
               <h2 style={{ fontSize: 22, marginBottom: 16 }}>Список пациентов:</h2>
 
@@ -107,9 +135,9 @@ function DoctorDashboard() {
                 <div style={{ color: "#616161", padding: 8 }}>Загрузка...</div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  <StatCard title="Всего: Пациенты с неполными данными" count={counts.red}    color="#a70b0b" percent={pct(counts.red)} />
-                  <StatCard title="Всего: Пациенты на подготовке"       count={counts.yellow} color="#b8950a" percent={pct(counts.yellow)} />
-                  <StatCard title="Всего: Пациенты готовые к операции"  count={counts.green}  color="#3ea515" percent={pct(counts.green)} />
+                  <StatCard title="Пациенты с неполными данными" count={counts.red}    color="#a70b0b" percent={pct(counts.red)} />
+                  <StatCard title="Пациенты на подготовке"       count={counts.yellow} color="#b8950a" percent={pct(counts.yellow)} />
+                  <StatCard title="Пациенты готовые к операции"  count={counts.green}  color="#3ea515" percent={pct(counts.green)} />
                 </div>
               )}
 
@@ -132,7 +160,6 @@ function DoctorDashboard() {
               </button>
             </div>
 
-            {/* Search */}
             <div style={{ position: "relative" }}>
               <span style={{
                 position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
@@ -157,7 +184,6 @@ function DoctorDashboard() {
               />
             </div>
 
-            {/* Tabs */}
             {!searchQuery && (
               <div style={{ display: "flex", borderBottom: "2px solid #E0DEE8", gap: 0 }}>
                 {tabs.map((tab) => (
@@ -180,27 +206,40 @@ function DoctorDashboard() {
                     }}
                   >
                     {tab.label}
+                    {!searchQuery && (
+                      <span style={{
+                        marginLeft: 6,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        backgroundColor: activeTab === tab.key ? STATUS_COLORS[tab.key] : "#E0DEE8",
+                        color: activeTab === tab.key ? "#fff" : "#616161",
+                        borderRadius: 10,
+                        padding: "1px 7px",
+                        verticalAlign: "middle",
+                      }}>
+                        {counts[tab.key]}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
             )}
 
-            {/* Patient list */}
             <div style={{
               backgroundColor: "#FFFFFF",
               borderRadius: 16,
               overflow: "hidden",
               boxShadow: "0 2px 12px rgba(57,86,138,0.07)",
             }}>
-              {loading ? (
+              {isListLoading ? (
                 <div style={{ padding: 24, color: "#616161" }}>Загрузка...</div>
               ) : displayPatients.length === 0 ? (
                 <div style={{ padding: 24, color: "#616161", textAlign: "center" }}>Пациенты не найдены</div>
               ) : (
                 <>
-                  <div style={{ padding: "12px 20px", borderBottom: "1px solid #EAE8EF" }}>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: "#a70b0b", fontFamily: "'Bitter', serif" }}>
-                      Список пациентов:
+                  <div style={{ padding: "12px 20px", borderBottom: "1px solid #EAE8EF", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: "#39568A", fontFamily: "'Bitter', serif" }}>
+                      {searchQuery ? `Результаты поиска (${searchData?.count ?? 0})` : `${STATUS_LABELS[activeTab]} (${counts[activeTab]})`}
                     </span>
                   </div>
                   {displayPatients.map((patient: Patient) => (
@@ -210,7 +249,7 @@ function DoctorDashboard() {
                       style={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 16,
+                        gap: 14,
                         padding: "14px 20px",
                         borderBottom: "1px solid #F0EFF4",
                         cursor: "pointer",
@@ -219,15 +258,52 @@ function DoctorDashboard() {
                       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#F5F4F9")}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
-                      <span style={{ color: "#616161", fontSize: 14, minWidth: 42, fontWeight: 600 }}>
-                        {/* Show a truncated ID as numeric reference */}
-                        {patient.id.slice(-4)}
-                      </span>
-                      <div style={{ flex: 1, borderLeft: "2px solid #EAE8EF", paddingLeft: 14 }}>
-                        <div style={{ fontWeight: 600, fontSize: 15 }}>
+                      <div style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        flexShrink: 0,
+                        backgroundColor: STATUS_COLORS[patient.status],
+                      }} title={STATUS_LABELS[patient.status]} />
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                           {patient.last_name} {patient.first_name} {patient.middle_name ?? ""}
                         </div>
+                        <div style={{ fontSize: 13, color: "#616161", marginTop: 2, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                          {patient.birth_date && (
+                            <span>
+                              {new Date(patient.birth_date).toLocaleDateString("ru-RU")}
+                              {" "}·{" "}
+                              {formatAge(patient.birth_date)}
+                            </span>
+                          )}
+                          {patient.diagnosis_icd10 && (
+                            <span style={{ color: "#888" }}>МКБ: {patient.diagnosis_icd10}</span>
+                          )}
+                          {patient.surgery_type && (
+                            <span style={{ color: "#888" }}>{patient.surgery_type}</span>
+                          )}
+                        </div>
                       </div>
+
+                      {searchQuery && (
+                        <span style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: STATUS_COLORS[patient.status],
+                          backgroundColor: STATUS_COLORS[patient.status] + "18",
+                          border: `1px solid ${STATUS_COLORS[patient.status]}40`,
+                          borderRadius: 8,
+                          padding: "2px 8px",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
+                        }}>
+                          {STATUS_LABELS[patient.status]}
+                        </span>
+                      )}
+
+                      <span style={{ color: "#CFCFCF", fontSize: 18, flexShrink: 0 }}>›</span>
                     </div>
                   ))}
                 </>
@@ -235,7 +311,6 @@ function DoctorDashboard() {
             </div>
           </div>
 
-          {/* ── Right: summary ── */}
           <div style={{
             width: 240,
             flexShrink: 0,
@@ -245,7 +320,7 @@ function DoctorDashboard() {
           }}>
             {[
               { label: "Всего:", value: total },
-              { label: "Свободные даты:", value: counts.blue },
+              { label: "Назначена дата:", value: counts.blue },
               { label: "Свободные хирурги:", value: 4 },
             ].map((item) => (
               <div key={item.label} style={{ backgroundColor: "#FFFFFF", borderRadius: 16, padding: "16px 20px", boxShadow: "0 2px 12px rgba(57,86,138,0.07)" }}>
@@ -268,7 +343,6 @@ function DoctorDashboard() {
   );
 }
 
-/* ── Add patient modal ── */
 function AddPatientModal({
   onClose, onSaved, createPatient,
 }: {

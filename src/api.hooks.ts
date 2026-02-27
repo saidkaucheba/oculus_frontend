@@ -1,15 +1,7 @@
-/**
- * api.hooks.ts
- *
- * React hooks for every API resource.
- * Each hook returns { data, loading, error, refetch } plus mutation helpers.
- *
- * Requirements: React 18+
- * No external state library needed — plain useState/useEffect/useCallback.
- */
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from './api.client';
+import { offlineMutation, cacheSet, cacheGet, subscribeSyncState, syncQueue } from './offlineQueue';
+import type { SyncState } from './offlineQueue';
 import type {
   Patient,
   CreatePatientPayload,
@@ -30,18 +22,17 @@ import type {
   PaginatedResponse,
 } from './api.types';
 
-// Re-export PatientListParams so consumers don't need to import from two places
 export type { PatientListParams };
-
-// ─── Generic async state ──────────────────────────────────────────────────────
 
 interface AsyncState<T> {
   data: T | null;
   loading: boolean;
   error: ApiError | null;
+  fromCache: boolean;
 }
 
-function useAsync<T>(
+function useAsyncCached<T>(
+  cacheKey: string,
   fn: () => Promise<T>,
   deps: unknown[] = [],
   skip = false,
@@ -50,9 +41,9 @@ function useAsync<T>(
     data: null,
     loading: !skip,
     error: null,
+    fromCache: false,
   });
 
-  // Prevent stale state updates after unmount
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -61,25 +52,49 @@ function useAsync<T>(
 
   const run = useCallback(async () => {
     if (skip) return;
-    setState((s) => ({ ...s, loading: true, error: null }));
+    setState(s => ({ ...s, loading: true, error: null }));
+
     try {
       const data = await fn();
-      if (mounted.current) setState({ data, loading: false, error: null });
+      if (mounted.current) {
+        setState({ data, loading: false, error: null, fromCache: false });
+        await cacheSet(cacheKey, data);
+      }
     } catch (err) {
-      if (mounted.current) setState({ data: null, loading: false, error: err as ApiError });
+      const cached = await cacheGet<T>(cacheKey);
+      if (mounted.current) {
+        if (cached !== null) {
+          setState({ data: cached, loading: false, error: null, fromCache: true });
+        } else {
+          setState({ data: null, loading: false, error: err as ApiError, fromCache: false });
+        }
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...deps, skip]);
+  }, [...deps, skip, cacheKey]);
 
   useEffect(() => { run(); }, [run]);
 
   return { ...state, refetch: run };
 }
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
+export function useSyncStatus(): SyncState & { sync: () => void } {
+  const [state, setState] = useState<SyncState>({
+    pendingCount: 0,
+    status: 'idle',
+    lastSyncAt: null,
+    lastError: null,
+  });
+
+  useEffect(() => {
+    const unsub = subscribeSyncState(setState);
+    return unsub;
+  }, []);
+
+  return { ...state, sync: syncQueue };
+}
 
 export function useCurrentUser() {
-  return useAsync(() => api.auth.me(), []);
+  return useAsyncCached('me', () => api.auth.me(), []);
 }
 
 export function useLogin() {
@@ -103,28 +118,43 @@ export function useLogin() {
   return { login, loading, error };
 }
 
-// ─── Patients ─────────────────────────────────────────────────────────────────
-
 export function usePatients(params?: PatientListParams) {
-  // Re-run when any filter param changes
   const depsKey = JSON.stringify(params ?? {});
-  const fetch = useAsync(
+  const cacheKey = `patients:list:${depsKey}`;
+
+  const fetch = useAsyncCached(
+    cacheKey,
     () => api.patients.list(params),
     [depsKey],
   );
 
   const createPatient = useCallback(
-    async (payload: CreatePatientPayload): Promise<Patient> => {
-      const patient = await api.patients.create(payload);
+    async (payload: CreatePatientPayload): Promise<Patient | null> => {
+      const optimistic: Patient = {
+        id: `temp_${crypto.randomUUID()}`,
+        created_by: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        status: 'red',
+        ...payload,
+      };
+
+      const result = await offlineMutation<Patient>(
+        'POST',
+        '/api/patients/',
+        payload,
+        'Создание пациента',
+      );
+
       fetch.refetch();
-      return patient;
+      return result ?? optimistic;
     },
     [fetch],
   );
 
   const deletePatient = useCallback(
     async (id: string): Promise<void> => {
-      await api.patients.delete(id);
+      await offlineMutation<void>('DELETE', `/api/patients/${id}/`, null, 'Удаление пациента');
       fetch.refetch();
     },
     [fetch],
@@ -134,18 +164,25 @@ export function usePatients(params?: PatientListParams) {
 }
 
 export function usePatient(id: string | null) {
-  const fetch = useAsync(
+  const cacheKey = `patient:${id}`;
+  const fetch = useAsyncCached(
+    cacheKey,
     () => api.patients.get(id!),
     [id],
     !id,
   );
 
   const update = useCallback(
-    async (payload: UpdatePatientPayload): Promise<Patient> => {
+    async (payload: UpdatePatientPayload): Promise<Patient | null> => {
       if (!id) throw new Error('No patient id');
-      const updated = await api.patients.patch(id, payload);
+      const result = await offlineMutation<Patient>(
+        'PATCH',
+        `/api/patients/${id}/`,
+        payload,
+        'Редактирование пациента',
+      );
       fetch.refetch();
-      return updated;
+      return result;
     },
     [id, fetch],
   );
@@ -154,26 +191,25 @@ export function usePatient(id: string | null) {
 }
 
 export function useMedicalHistory(patientId: string | null) {
-  return useAsync<MedicalHistory>(
+  return useAsyncCached<MedicalHistory>(
+    `medical_history:${patientId}`,
     () => api.patients.medicalHistory(patientId!),
     [patientId],
     !patientId,
   );
 }
 
-// ─── Preparation templates ────────────────────────────────────────────────────
-
 export function usePreparationTemplates(search?: string) {
-  return useAsync<PaginatedResponse<PreparationTemplate>>(
+  return useAsyncCached<PaginatedResponse<PreparationTemplate>>(
+    `templates:${search ?? ''}`,
     () => api.templates.list(search),
     [search],
   );
 }
 
-// ─── Patient preparations ─────────────────────────────────────────────────────
-
 export function usePatientPreparations(patientId: string | null) {
-  const fetch = useAsync<PaginatedResponse<PatientPreparation>>(
+  const fetch = useAsyncCached<PaginatedResponse<PatientPreparation>>(
+    `preparations:${patientId}`,
     () => api.preparations.list(patientId!),
     [patientId],
     !patientId,
@@ -181,7 +217,12 @@ export function usePatientPreparations(patientId: string | null) {
 
   const complete = useCallback(
     async (prepId: string) => {
-      await api.preparations.complete(prepId);
+      await offlineMutation<{ status: string }>(
+        'POST',
+        `/api/preparations/${prepId}/complete/`,
+        {},
+        'Выполнение пункта подготовки',
+      );
       fetch.refetch();
     },
     [fetch],
@@ -190,15 +231,16 @@ export function usePatientPreparations(patientId: string | null) {
   return { ...fetch, complete };
 }
 
-// ─── IOL Calculations ─────────────────────────────────────────────────────────
-
-/** Live calculation — does NOT save to the database. */
 export function useIOLCalculate() {
   const [result, setResult] = useState<IOLCalculateResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
 
   const calculate = useCallback(async (payload: IOLCalculatePayload) => {
+    if (!navigator.onLine) {
+      setError({ error: 'Расчёт ИОЛ недоступен офлайн. Подключитесь к интернету.' });
+      return null;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -214,20 +256,24 @@ export function useIOLCalculate() {
   }, []);
 
   const reset = useCallback(() => { setResult(null); setError(null); }, []);
-
   return { result, loading, error, calculate, reset };
 }
 
-/** Save a calculation to the database. */
 export function useIOLCalculateAndSave() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
 
-  const save = useCallback(async (payload: IOLCalculateAndSavePayload): Promise<IOLCalculation> => {
+  const save = useCallback(async (payload: IOLCalculateAndSavePayload): Promise<IOLCalculation | null> => {
     setLoading(true);
     setError(null);
     try {
-      return await api.iolCalculations.calculateAndSave(payload);
+      const result = await offlineMutation<IOLCalculation>(
+        'POST',
+        '/api/iol-calculations/calculate_and_save/',
+        payload,
+        'Сохранение расчёта ИОЛ',
+      );
+      return result;
     } catch (err) {
       setError(err as ApiError);
       throw err;
@@ -240,7 +286,8 @@ export function useIOLCalculateAndSave() {
 }
 
 export function usePatientIOLHistory(patientId: string | null) {
-  return useAsync<IOLCalculation[]>(
+  return useAsyncCached<IOLCalculation[]>(
+    `iol_history:${patientId}`,
     () => api.iolCalculations.patientHistory(patientId!),
     [patientId],
     !patientId,
@@ -248,55 +295,77 @@ export function usePatientIOLHistory(patientId: string | null) {
 }
 
 export function useIOLCompare(calculationId: string | null) {
-  return useAsync(
+  return useAsyncCached(
+    `iol_compare:${calculationId}`,
     () => api.iolCalculations.compareForPatient(calculationId!),
     [calculationId],
     !calculationId,
   );
 }
 
-// ─── Surgeon feedback ─────────────────────────────────────────────────────────
-
 export function useFeedback() {
-  const fetch = useAsync(() => api.feedback.list(), []);
+  const fetch = useAsyncCached(`feedback:list`, () => api.feedback.list(), []);
 
   const create = useCallback(
-    async (payload: CreateFeedbackPayload): Promise<SurgeonFeedback> => {
-      const item = await api.feedback.create(payload);
+    async (payload: CreateFeedbackPayload): Promise<SurgeonFeedback | null> => {
+      const result = await offlineMutation<SurgeonFeedback>(
+        'POST',
+        '/api/feedback/',
+        payload,
+        'Направление на доследование',
+      );
       fetch.refetch();
-      return item;
+      return result;
     },
     [fetch],
   );
 
   return { ...fetch, create };
 }
-
-// ─── Media files ──────────────────────────────────────────────────────────────
+export function usePatientReferrals(patientId: string | null) {
+  return useAsyncCached<SurgeonFeedback[]>(
+    `referrals:${patientId}`,
+    () => api.feedback.list().then((r) => {
+      const results = (r as unknown as { results?: SurgeonFeedback[] }).results ?? (r as unknown as SurgeonFeedback[]);
+      return Array.isArray(results) ? results.filter((f) => f.patient === patientId) : [];
+    }),
+    [patientId],
+    !patientId,
+  );
+}
 
 export function usePatientMedia(patientId: string | null) {
-  const fetch = useAsync<MediaFile[]>(
+  const fetch = useAsyncCached<MediaFile[]>(
+    `media:${patientId}`,
     () => api.mediaFiles.list(patientId!) as Promise<MediaFile[]>,
     [patientId],
     !patientId,
   );
 
   const upload = useCallback(
-    async (
-      file: File,
-      extra?: { preparation?: string; description?: string },
-    ): Promise<MediaFile> => {
+    async (file: File, extra?: { preparation?: string; description?: string }): Promise<MediaFile | null> => {
       if (!patientId) throw new Error('No patient id');
-      const uploaded = await api.mediaFiles.upload(file, patientId, extra);
+      const form = new FormData();
+      form.append('file', file);
+      form.append('patient', patientId);
+      if (extra?.preparation) form.append('preparation', extra.preparation);
+      if (extra?.description)  form.append('description',  extra.description);
+
+      const result = await offlineMutation<MediaFile>(
+        'POST',
+        '/api/media/',
+        form,
+        `Загрузка файла «${file.name}»`,
+      );
       fetch.refetch();
-      return uploaded;
+      return result;
     },
     [patientId, fetch],
   );
 
   const remove = useCallback(
     async (id: string) => {
-      await api.mediaFiles.delete(id);
+      await offlineMutation<void>('DELETE', `/api/media/${id}/`, null, 'Удаление файла');
       fetch.refetch();
     },
     [fetch],
@@ -304,7 +373,12 @@ export function usePatientMedia(patientId: string | null) {
 
   const verify = useCallback(
     async (id: string) => {
-      await api.mediaFiles.verify(id);
+      await offlineMutation<{ status: string }>(
+        'POST',
+        `/api/media/${id}/verify/`,
+        {},
+        'Верификация документа',
+      );
       fetch.refetch();
     },
     [fetch],
@@ -313,22 +387,22 @@ export function usePatientMedia(patientId: string | null) {
   return { ...fetch, upload, remove, verify };
 }
 
-// ─── Analytics ────────────────────────────────────────────────────────────────
-
 export function useDashboard(doctorId?: string) {
-  return useAsync<DashboardData>(
+  return useAsyncCached<DashboardData>(
+    `dashboard:${doctorId ?? 'all'}`,
     () => api.analytics.dashboard(doctorId),
     [doctorId],
   );
 }
 
 export function usePatientStats(startDate?: string, endDate?: string) {
-  return useAsync(
+  return useAsyncCached(
+    `patient_stats:${startDate}:${endDate}`,
     () => api.analytics.patients(startDate, endDate),
     [startDate, endDate],
   );
 }
 
 export function useIOLStatistics() {
-  return useAsync(() => api.analytics.iolStatistics(), []);
+  return useAsyncCached(`iol_statistics`, () => api.analytics.iolStatistics(), []);
 }

@@ -1,19 +1,9 @@
-// ─── Enums ────────────────────────────────────────────────────────────────────
-
 export type UserRole = 'district_doctor' | 'surgeon' | 'patient' | 'admin';
-
 export type PatientStatus = 'red' | 'yellow' | 'green' | 'blue';
-
 export type Gender = 'male' | 'female';
-
 export type Eye = 'right' | 'left';
-
 export type IOLFormula = 'srk_t' | 'holladay' | 'hoffer_q' | 'haigis' | 'barrett';
-
-export type FeedbackStatus = 'success' | 'complications' | 'postponed' | 'cancelled';
-
-// ─── Core models ──────────────────────────────────────────────────────────────
-
+export type ReferralActionType = 'reexamine';
 export interface User {
   id: string;
   email: string;
@@ -21,6 +11,7 @@ export interface User {
   last_name: string;
   middle_name: string | null;
   role: UserRole;
+  linked_patient_id: string | null;
 }
 
 export interface Patient {
@@ -29,7 +20,7 @@ export interface Patient {
   last_name: string;
   first_name: string;
   middle_name: string | null;
-  birth_date: string; // ISO date: "YYYY-MM-DD"
+  birth_date: string;
   gender: Gender | null;
   passport_series: string | null;
   passport_number: string | null;
@@ -43,7 +34,7 @@ export interface Patient {
   status: PatientStatus;
   surgery_date: string | null;
   fhir_data: Record<string, unknown> | null;
-  created_at: string; // ISO datetime
+  created_at: string;
   updated_at: string;
 }
 
@@ -59,7 +50,7 @@ export interface PatientPreparation {
   id: string;
   patient: string;
   template: string;
-  template_details: PreparationTemplate | null; // read-only nested
+  template_details: PreparationTemplate | null;
   completed: boolean;
   completion_date: string | null;
   comment: string | null;
@@ -69,10 +60,10 @@ export interface PatientPreparation {
 export interface MediaFile {
   id: string;
   patient: string;
-  patient_name?: string;       // detail serializer
+  patient_name?: string;
   preparation: string | null;
-  preparation_info?: string | null; // detail serializer
-  file: string;                // relative path (use file_url for display)
+  preparation_info?: string | null;
+  file: string;
   file_url: string | null;
   file_name: string;
   file_type: string;
@@ -90,9 +81,9 @@ export interface MediaFile {
 export interface IOLCalculation {
   id: string;
   patient: string;
-  patient_name?: string;       // detail serializer
+  patient_name?: string;
   eye: Eye;
-  k1: string;                  // DecimalField comes back as string from DRF
+  k1: string;
   k2: string;
   acd: string;
   axial_length: string;
@@ -103,22 +94,33 @@ export interface IOLCalculation {
   created_at: string;
 }
 
-export interface SurgeonFeedback {
+export interface SurgeonReferral {
   id: string;
   patient: string;
   surgeon: string;
+  surgeon_name: string | null;
+  patient_name: string | null;
+  action_type: ReferralActionType;
   comment: string;
-  status_after: FeedbackStatus | null;
   created_at: string;
 }
 
-// ─── Request payloads ─────────────────────────────────────────────────────────
+export type SurgeonFeedback = SurgeonReferral;
 
 export type CreatePatientPayload = Omit<Patient,
   'id' | 'created_by' | 'created_at' | 'updated_at'
 >;
 
 export type UpdatePatientPayload = Partial<CreatePatientPayload>;
+
+export interface PatientListParams {
+  status?: string;
+  gender?: string;
+  surgery_type?: string;
+  search?: string;
+  ordering?: string;
+  page?: number;
+}
 
 export interface IOLCalculatePayload {
   axial_length: number;
@@ -134,13 +136,13 @@ export interface IOLCalculateAndSavePayload extends IOLCalculatePayload {
   formula: IOLFormula;
 }
 
-export interface CreateFeedbackPayload {
+export interface CreateReferralPayload {
   patient: string;
   comment: string;
-  status_after?: FeedbackStatus;
 }
 
-// ─── Response shapes ──────────────────────────────────────────────────────────
+export type CreateFeedbackPayload = CreateReferralPayload;
+
 
 export interface PaginatedResponse<T> {
   count: number;
@@ -178,8 +180,6 @@ export interface MedicalHistory {
   media_files: MediaFile[];
   feedback: SurgeonFeedback[];
 }
-
-// ─── Analytics ────────────────────────────────────────────────────────────────
 
 export interface PatientStatistics {
   total_patients: number;
@@ -220,8 +220,6 @@ export interface DashboardData {
     created_at: string;
   }[];
 }
-
-// ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface LoginPayload {
   email: string;

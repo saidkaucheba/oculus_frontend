@@ -3,22 +3,54 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import type { ApiError } from "../api.types";
 
+function OculusLogo({ size = 90 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" fill="none">
+      <circle cx={45} cy={50} r={16} fill="#39568A" />
+      <circle cx={45} cy={50} r={7} fill="#FFFFFF" />
+      <path d="M 58 42 Q 90 30 95 50 Q 90 70 58 58 Q 75 50 58 42 Z" fill="#39568A" />
+      <path d="M 55 58 Q 75 75 70 90 Q 60 80 55 65 Z" fill="#39568A" />
+      <path d="M 55 42 Q 72 20 68 8 Q 58 22 52 36 Z" fill="#39568A" />
+      <path d="M 29 48 L 12 50 L 29 52 Z" fill="#39568A" />
+    </svg>
+  );
+}
+
+function GosuslugiIcon() {
+  return (
+    <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
+      <path
+        d="M 19 2 L 33 10 L 33 28 L 19 36 L 5 28 L 5 10 Z"
+        fill="none"
+        stroke="#0065b3"
+        strokeWidth="2.5"
+      />
+      <path
+        d="M 19 2 L 33 10"
+        stroke="#e52322"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+      <text x="19" y="23" textAnchor="middle" fontSize="7" fontWeight="bold" fill="#0065b3" fontFamily="Arial">услуги</text>
+    </svg>
+  );
+}
+
 function Login() {
   const { login, user, initializing } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
 
-  // Already logged in → redirect
   useEffect(() => {
     if (!initializing && user) {
       if (user.role === "surgeon") navigate("/surgeon", { replace: true });
       else if (user.role === "district_doctor" || user.role === "admin")
         navigate("/doctor", { replace: true });
-      else navigate(`/patient/${user.id}`, { replace: true });
+      else navigate(`/patient/${user.linked_patient_id ?? "unlinked"}`, { replace: true });
     }
   }, [user, initializing, navigate]);
 
@@ -30,7 +62,7 @@ function Login() {
       await login(email, password);
     } catch (err) {
       const apiErr = err as ApiError;
-      setError(apiErr.error ?? apiErr.detail ?? "Ошибка входа");
+      setError(apiErr.error ?? apiErr.detail ?? "Неверный логин или пароль");
     } finally {
       setLoading(false);
     }
@@ -45,29 +77,30 @@ function Login() {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      padding: "24px",
+      padding: 24,
+      fontFamily: "'Bitter', Georgia, serif",
     }}>
-      {/* Blue card — matches the design PDF */}
       <div style={{
         backgroundColor: "#39568A",
         borderRadius: 24,
-        padding: "48px 40px 44px",
+        padding: "52px 44px 48px",
         width: "100%",
         maxWidth: 420,
-        boxShadow: "0 8px 40px rgba(57,86,138,0.25)",
+        boxShadow: "0 8px 40px rgba(57,86,138,0.35)",
       }}>
         <h1 style={{
-          fontSize: 36,
+          fontSize: 42,
           fontWeight: 700,
           color: "#FFFFFF",
           textAlign: "center",
           marginBottom: 36,
-          fontFamily: "'Bitter', serif",
+          fontFamily: "'Bitter', Georgia, serif",
+          letterSpacing: "-0.5px",
         }}>
           Вход
         </h1>
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <input
             type="email"
             placeholder="Логин"
@@ -75,7 +108,7 @@ function Login() {
             onChange={(e) => setEmail(e.target.value)}
             required
             disabled={loading}
-            style={fieldStyle}
+            style={inputStyle}
           />
           <input
             type="password"
@@ -84,7 +117,7 @@ function Login() {
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={loading}
-            style={fieldStyle}
+            style={inputStyle}
           />
 
           {error && (
@@ -92,7 +125,7 @@ function Login() {
               backgroundColor: "rgba(255,255,255,0.15)",
               color: "#FFFFFF",
               borderRadius: 10,
-              padding: "10px 14px",
+              padding: "10px 16px",
               fontSize: 14,
               textAlign: "center",
             }}>
@@ -104,66 +137,53 @@ function Login() {
             type="submit"
             disabled={loading}
             style={{
-              marginTop: 8,
-              padding: "16px",
-              backgroundColor: "#F0EFF4",
+              marginTop: 6,
+              padding: "15px",
+              backgroundColor: "#EAE8EF",
               color: "#000000",
               border: "none",
               borderRadius: 50,
-              fontSize: 18,
-              fontFamily: "'Source Serif 4', serif",
+              fontSize: 20,
+              fontFamily: "'Source Serif 4', 'Bitter', Georgia, serif",
               fontWeight: 700,
               cursor: loading ? "not-allowed" : "pointer",
-              transition: "background-color 0.18s",
               opacity: loading ? 0.75 : 1,
+              boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+              transition: "opacity 0.15s",
             }}
           >
             {loading ? "Вход..." : "Войти"}
           </button>
         </form>
 
-        {/* Gosuslugi link — shown in design */}
         <div style={{
-          marginTop: 28,
+          marginTop: 32,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           gap: 10,
-          color: "rgba(255,255,255,0.75)",
-          fontSize: 14,
+          color: "rgba(255,255,255,0.90)",
+          fontSize: 15,
+          cursor: "pointer",
         }}>
           <span>Войти через Госуслуги</span>
-          <div style={{
-            width: 36,
-            height: 36,
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #0065b3, #0097fd)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontSize: 10,
-            color: "#FFFFFF",
-            fontWeight: 700,
-            letterSpacing: "-0.5px",
-          }}>
-            ГУ
-          </div>
+          <GosuslugiIcon />
         </div>
       </div>
     </div>
   );
 }
 
-const fieldStyle: React.CSSProperties = {
+const inputStyle: React.CSSProperties = {
   width: "100%",
-  padding: "14px 18px",
-  fontSize: 16,
+  padding: "15px 22px",
+  fontSize: 17,
   borderRadius: 50,
   border: "none",
-  fontFamily: "'Bitter', serif",
+  fontFamily: "'Bitter', Georgia, serif",
   outline: "none",
   backgroundColor: "#FFFFFF",
-  color: "#000000",
+  color: "#616161",
   boxSizing: "border-box",
 };
 

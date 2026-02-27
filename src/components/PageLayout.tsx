@@ -7,38 +7,37 @@ type PageLayoutProps = {
 
 function PageLayout({ children, fullName }: PageLayoutProps) {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", backgroundColor: "#EAE8EF" }}>
       <Header fullName={fullName} />
       <main style={{
         flex: 1,
-        paddingTop: 72,
-        backgroundColor: "#EAE8EF",
+        paddingTop: 64,
         boxSizing: "border-box",
       }}>
         {children}
       </main>
 
-      {/* Footer */}
       <footer style={{
         backgroundColor: "#FFFFFF",
-        borderTop: "1px solid #E0DEE8",
+        borderTop: "1px solid #D8D6E0",
         padding: "14px 24px",
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "center",
+        alignItems: "flex-start",
         flexWrap: "wrap",
         gap: 8,
         fontSize: 12,
         color: "#616161",
+        fontFamily: "'Bitter', Georgia, serif",
       }}>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
           <span>© 2026 ГБУ РС(Я). Все права защищены.</span>
-          <span>Министерство здравоохранения РС(Я)</span>
-          <span>Разработка и дизайн "Сухарики"</span>
+          <a href="#" style={{ color: "#39568A", textDecoration: "none" }}>Министерство здравоохранения РС(Я)</a>
+          <a href="#" style={{ color: "#39568A", textDecoration: "none" }}>Разработка и дизайн «Сухарики»</a>
         </div>
-        <div style={{ display: "flex", gap: 16 }}>
-          <a href="#" style={{ color: "#39568A", textDecoration: "none", fontSize: 12 }}>Пользовательское соглашение</a>
-          <a href="#" style={{ color: "#39568A", textDecoration: "none", fontSize: 12 }}>Политика конфиденциальности</a>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, textAlign: "right" }}>
+          <a href="#" style={{ color: "#39568A", textDecoration: "none" }}>Пользовательское соглашение</a>
+          <a href="#" style={{ color: "#39568A", textDecoration: "none" }}>Политика конфиденциальности</a>
         </div>
       </footer>
     </div>

@@ -1,17 +1,3 @@
-/**
- * AuthContext.tsx
- *
- * Provides the current user, login/logout helpers, and a role-check utility
- * to the entire React tree.
- *
- * Usage:
- *   <AuthProvider>
- *     <App />
- *   </AuthProvider>
- *
- *   const { user, login, logout, hasRole } = useAuth();
- */
-
 import React, {
   createContext,
   useContext,
@@ -23,29 +9,20 @@ import React, {
 import { api } from './api.client';
 import type { User, UserRole, ApiError } from './api.types';
 
-// ─── Context type ─────────────────────────────────────────────────────────────
-
 interface AuthContextValue {
   user: User | null;
-  /** True while the initial /api/me/ check is in flight */
   initializing: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
-  /** Returns true if the logged-in user has one of the given roles */
   hasRole: (...roles: UserRole[]) => boolean;
 }
 
-// ─── Context ──────────────────────────────────────────────────────────────────
-
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-// ─── Provider ─────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [initializing, setInitializing] = useState(true);
 
-  // On mount: check if the user already has an active session
   useEffect(() => {
     api.auth
       .me()
@@ -56,14 +33,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string) => {
     await api.auth.login({ email, password });
-    // After login Django sets the session cookie; fetch the user object
     const me = await api.auth.me();
     setUser(me);
   }, []);
 
   const logout = useCallback(() => {
-    // Django session logout — fire and forget; clear local state immediately
-    fetch(`${import.meta.env.VITE_API_URL ?? 'http://localhost:8000'}/api-auth/logout/`, {
+    fetch(`${import.meta.env.VITE_API_URL ?? ''}/api-auth/logout/`, {
       method: 'POST',
       credentials: 'include',
     }).catch(() => {});
@@ -82,28 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
-
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be used inside <AuthProvider>');
   return ctx;
 }
 
-// ─── Route guard ──────────────────────────────────────────────────────────────
-
-/**
- * Wrap any component tree to require authentication (and optionally a role).
- *
- * @example
- *   <RequireAuth>
- *     <Dashboard />
- *   </RequireAuth>
- *
- *   <RequireAuth roles={['surgeon', 'admin']}>
- *     <FeedbackPage />
- *   </RequireAuth>
- */
 export function RequireAuth({
   children,
   roles,

@@ -1,15 +1,3 @@
-/**
- * api.client.ts
- *
- * Central HTTP client for the Oculus backend.
- *
- * Features:
- *  - Automatic CSRF cookie fetch before first mutating request
- *  - Session-cookie-based auth (same as Django's SessionAuthentication)
- *  - Typed error handling via ApiError
- *  - Full coverage of every API endpoint
- */
-
 import type {
   LoginPayload,
   LoginResponse,
@@ -36,16 +24,10 @@ import type {
   ApiError,
 } from './api.types';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-
-// Empty string when using Vite dev proxy; set VITE_API_URL for production builds.
 const BASE_URL: string = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
-
-// ─── Internal helpers ─────────────────────────────────────────────────────────
 
 let csrfReady = false;
 
-/** Fetch the CSRF cookie from Django once before the first mutating request. */
 async function ensureCsrf(): Promise<void> {
   if (csrfReady) return;
   const csrfBase = BASE_URL || '';
@@ -69,7 +51,6 @@ async function request<T>(
   const isMutating = method !== 'GET';
   if (isMutating) await ensureCsrf();
 
-  // Build the URL: when BASE_URL is empty (dev proxy), use relative URLs via window.location.origin
   const base = BASE_URL || window.location.origin;
   const url = new URL(`${base}${path}`);
   if (params) {
@@ -90,7 +71,6 @@ async function request<T>(
     body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
   });
 
-  // 204 No Content
   if (response.status === 204) return undefined as T;
 
   const data = await response.json();
@@ -103,8 +83,6 @@ async function request<T>(
   return data as T;
 }
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
-
 export const auth = {
   login: (payload: LoginPayload) =>
     request<LoginResponse>('POST', '/api/login/', payload),
@@ -112,8 +90,6 @@ export const auth = {
   me: () =>
     request<User>('GET', '/api/me/'),
 };
-
-// ─── Patients ─────────────────────────────────────────────────────────────────
 
 export interface PatientListParams {
   status?: string;
@@ -153,7 +129,6 @@ export const patients = {
     request<MedicalHistory>('GET', `/api/patients/${id}/medical_history/`),
 };
 
-// ─── Preparation templates ────────────────────────────────────────────────────
 
 export const templates = {
   list: (search?: string) =>
@@ -174,7 +149,6 @@ export const templates = {
     request<void>('DELETE', `/api/templates/${id}/`),
 };
 
-// ─── Patient preparations ─────────────────────────────────────────────────────
 
 export const preparations = {
   list: (patientId?: string) =>
@@ -195,7 +169,6 @@ export const preparations = {
     request<void>('DELETE', `/api/preparations/${id}/`),
 };
 
-// ─── IOL Calculations ─────────────────────────────────────────────────────────
 
 export const iolCalculations = {
   list: () =>
@@ -204,23 +177,18 @@ export const iolCalculations = {
   get: (id: string) =>
     request<IOLCalculation>('GET', `/api/iol-calculations/${id}/`),
 
-  /** Calculate without saving — use for live preview */
   calculate: (payload: IOLCalculatePayload) =>
     request<IOLCalculateResponse>('POST', '/api/iol-calculations/calculate/', payload),
 
-  /** Calculate and persist to database */
   calculateAndSave: (payload: IOLCalculateAndSavePayload) =>
     request<IOLCalculation>('POST', '/api/iol-calculations/calculate_and_save/', payload),
 
-  /** Compare all formulas for an existing saved calculation */
   compareFormulas: (id: string) =>
     request<IOLCalculateResponse>('GET', `/api/iol-calculations/${id}/compare_formulas/`),
 
-  /** Full compare + recommendation for a saved calculation */
   compareForPatient: (id: string) =>
     request<IOLCompareResponse>('GET', `/api/iol-calculations/${id}/compare_for_patient/`),
 
-  /** All saved calculations for a patient */
   patientHistory: (patientId: string) =>
     request<IOLCalculation[]>(
       'GET', '/api/iol-calculations/patient_history/', undefined, { patient_id: patientId }
@@ -230,7 +198,6 @@ export const iolCalculations = {
     request<void>('DELETE', `/api/iol-calculations/${id}/`),
 };
 
-// ─── Surgeon feedback ─────────────────────────────────────────────────────────
 
 export const feedback = {
   list: () =>
@@ -249,7 +216,6 @@ export const feedback = {
     request<void>('DELETE', `/api/feedback/${id}/`),
 };
 
-// ─── Media files ──────────────────────────────────────────────────────────────
 
 export const mediaFiles = {
   list: (patientId?: string) =>
@@ -260,11 +226,6 @@ export const mediaFiles = {
   get: (id: string) =>
     request<MediaFile>('GET', `/api/media/${id}/`),
 
-  /**
-   * Upload a file for a patient.
-   * @example
-   *   await mediaFiles.upload(file, patientId, { description: 'Pre-op scan' })
-   */
   upload: (
     file: File,
     patientId: string,
@@ -278,7 +239,6 @@ export const mediaFiles = {
     return request<MediaFile>('POST', '/api/media/', form);
   },
 
-  /** Returns a direct download URL (no fetch needed — open in new tab or <a href>) */
   downloadUrl: (id: string) => `${BASE_URL || ''}/api/media/${id}/download/`,
 
   verify: (id: string) =>
@@ -287,8 +247,6 @@ export const mediaFiles = {
   delete: (id: string) =>
     request<void>('DELETE', `/api/media/${id}/`),
 };
-
-// ─── Analytics ────────────────────────────────────────────────────────────────
 
 export const analytics = {
   dashboard: (doctorId?: string) =>
@@ -312,12 +270,9 @@ export const analytics = {
     request<IOLStatistics>('GET', '/api/analytics/iol_statistics/'),
 
   surgeonPerformance: (doctorId?: string, days?: number) => {
-    // surgeon_performance is part of dashboard; expose separately for convenience
     return analytics.dashboard(doctorId).then((d) => d.surgeon_performance as SurgeonPerformance[]);
   },
 };
-
-// ─── Named re-export for tree-shaking ─────────────────────────────────────────
 
 export const api = {
   auth,

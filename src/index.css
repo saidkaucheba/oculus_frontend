@@ -1,4 +1,3 @@
-/* Reset — global.css handles all app styles */
 *, *::before, *::after {
   box-sizing: border-box;
 }

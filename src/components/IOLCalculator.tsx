@@ -142,7 +142,6 @@ function IOLCalculator({ patientId }: Props) {
         {loading ? "Расчёт..." : "Рассчитать"}
       </button>
 
-      {/* Results */}
       {resultEntries.length > 0 && (
         <div style={{ backgroundColor: "#EAE8EF", borderRadius: 10, padding: 14, marginBottom: 12 }}>
           {resultEntries.map(([f, v]) => (
@@ -159,7 +158,6 @@ function IOLCalculator({ patientId }: Props) {
         </div>
       )}
 
-      {/* Save button — only when patient context provided */}
       {patientId && resultEntries.length > 0 && (
         <>
           {saveError && <div style={{ color: "#a70b0b", fontSize: 13, marginBottom: 8 }}>{saveError.error}</div>}
@@ -178,7 +176,6 @@ function IOLCalculator({ patientId }: Props) {
         </>
       )}
 
-      {/* History */}
       {history && history.length > 0 && (
         <div style={{ marginTop: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: "#616161", marginBottom: 8 }}>История расчётов:</div>

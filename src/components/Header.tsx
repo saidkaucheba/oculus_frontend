@@ -1,15 +1,31 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
+import SyncIndicator from "./SyncIndicator";
+import logoImage from "../assets/Ellipse 10.png";
 
-type HeaderProps = {
-  fullName?: string;
-};
+export function OculusLogo({ size = 89, invert = false }: { size?: number; invert?: boolean }) {
+  return (
+    <img 
+      src={logoImage}
+      alt="Офтальмолог.Онлайн"
+      width={size}
+      height={size}
+      style={{
+        display: 'block',
+      }}
+    />
+  );
+}
+
+type HeaderProps = { fullName?: string };
 
 function Header({ fullName }: HeaderProps) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const displayName = fullName ?? (user ? `${user.last_name} ${user.first_name[0]}.` : "");
+  const displayName = fullName ?? (user
+    ? `${user.last_name} ${user.first_name[0]}.${user.middle_name ? ` ${user.middle_name[0]}.` : ""}`
+    : "");
 
   function handleLogout() {
     logout();
@@ -22,95 +38,79 @@ function Header({ fullName }: HeaderProps) {
       top: 0,
       left: 0,
       width: "100%",
-      height: 72,
+      height: 64,
       backgroundColor: "#39568A",
       zIndex: 1000,
-      boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.18)",
     }}>
       <div style={{
         position: "relative",
         height: "100%",
         maxWidth: 1280,
         margin: "0 auto",
-        padding: "0 24px",
+        padding: "0 16px",
         display: "flex",
         alignItems: "center",
-        boxSizing: "border-box",
       }}>
-        {/* Logo icon */}
+
         <div
           onClick={() => navigate("/")}
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: "50%",
-            border: "2px solid rgba(255,255,255,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            flexShrink: 0,
-            color: "#FFFFFF",
-            fontSize: 22,
-          }}
+          style={{ cursor: "pointer", flexShrink: 0, lineHeight: 0 }}
           title="На главную"
         >
-          👁
+          <OculusLogo size={44} invert />
         </div>
 
-        {/* Brand name — centered */}
         <div style={{
           position: "absolute",
           left: "50%",
           transform: "translateX(-50%)",
-          backgroundColor: "#FFFFFF",
-          borderRadius: 50,
-          padding: "7px 22px",
-          fontSize: 20,
-          fontFamily: "'Bitter', serif",
-          fontWeight: 700,
-          whiteSpace: "nowrap",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
         }}>
-          <span style={{ color: "#39568A" }}>Офтальмолог</span>
-          <span style={{ color: "#000000" }}>.Онлайн</span>
+          <div style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: 50,
+            padding: "6px 24px",
+            fontSize: 20,
+            fontFamily: "'Bitter', Georgia, serif",
+            fontWeight: 700,
+            whiteSpace: "nowrap",
+          }}>
+            <span style={{ color: "#39568A", fontWeight: 700 }}>Офтальмолог</span>
+            <span style={{ color: "#000000", fontWeight: 400 }}>.Онлайн</span>
+          </div>
         </div>
 
-        {/* Right: user name + logout */}
         <div style={{
           marginLeft: "auto",
           display: "flex",
           alignItems: "center",
-          gap: 12,
+          gap: 10,
           flexShrink: 0,
         }}>
-          <button
+          <SyncIndicator />
+
+          <span style={{
+            color: "rgba(255,255,255,0.9)",
+            fontSize: 15,
+            cursor: "pointer",
+            padding: "4px 8px",
+            fontFamily: "'Bitter', Georgia, serif",
+          }}
             onClick={handleLogout}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "rgba(255,255,255,0.85)",
-              fontSize: 15,
-              cursor: "pointer",
-              fontFamily: "inherit",
-              padding: "4px 8px",
-              transition: "color 0.18s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#FFFFFF")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.85)")}
           >
             Выход
-          </button>
+          </span>
 
           <div style={{
             backgroundColor: "rgba(255,255,255,0.15)",
+            border: "1px solid rgba(255,255,255,0.4)",
             color: "#FFFFFF",
-            padding: "6px 16px",
+            padding: "6px 18px",
             borderRadius: 50,
             fontSize: 14,
             fontWeight: 600,
             whiteSpace: "nowrap",
-            border: "1px solid rgba(255,255,255,0.25)",
+            fontFamily: "'Bitter', Georgia, serif",
           }}>
             {displayName}
           </div>

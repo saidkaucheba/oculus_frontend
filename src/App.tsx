@@ -7,15 +7,14 @@ import SurgeonDashboard from "./pages/SurgeonDashboard";
 import PatientPage from "./pages/PatientPage";
 import PatientCardPage from "./pages/PatientCardPage";
 
-// Redirect to the right dashboard based on role after login
 function RoleRedirect() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === "surgeon") return <Navigate to="/surgeon" replace />;
   if (user.role === "district_doctor" || user.role === "admin")
     return <Navigate to="/doctor" replace />;
-  // patient role
-  return <Navigate to={`/patient/${user.id}`} replace />;
+  if (user.linked_patient_id) return <Navigate to={`/patient/${user.linked_patient_id}`} replace />;
+  return <Navigate to="/patient/unlinked" replace />;
 }
 
 function App() {
@@ -24,7 +23,6 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
 
-        {/* Doctor routes */}
         <Route
           path="/doctor"
           element={
@@ -42,7 +40,6 @@ function App() {
           }
         />
 
-        {/* Surgeon routes */}
         <Route
           path="/surgeon"
           element={
@@ -52,7 +49,6 @@ function App() {
           }
         />
 
-        {/* Patient self-view */}
         <Route
           path="/patient/:id"
           element={
@@ -62,7 +58,6 @@ function App() {
           }
         />
 
-        {/* Root: redirect based on role */}
         <Route path="/" element={<RoleRedirect />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
